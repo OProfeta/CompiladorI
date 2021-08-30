@@ -1,0 +1,4 @@
+*.zip
+lexico/
+*.pdf
+__pycache__/
