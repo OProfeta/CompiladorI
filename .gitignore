@@ -2,3 +2,4 @@
 lexico/
 *.pdf
 __pycache__/
+gencode/
