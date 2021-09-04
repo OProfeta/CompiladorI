@@ -94,7 +94,7 @@ class Scanner():
         return c >= '0' and c <= '9'
 
     def isEOF(self):
-        return self.pos == len(self.conteudo)
+        return self.pos >= len(self.conteudo)
 
     def nextChar(self):
         if self.isEOF():
