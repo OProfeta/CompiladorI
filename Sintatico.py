@@ -1,11 +1,48 @@
-from os import SEEK_HOLE
+from io import SEEK_CUR
+from Simbolo import Simbolo
 from Token import Token, TokenType
 from Scanner import Scanner
 
 class Sintatico():
 
+    lexico: Scanner
+    simbolo: Token
+    tipo: TokenType
+    # tabelaSimbolo = {"nomeDoSimbolo": Simbolo}
+    tabelaSimbolo = {}
+    codigo = "operador;arg1;arg2;result\n"
+    temp = 1
+
+    listaIfs = []
+    posListaIfs = -1
+    tlmode = False
+    flmode = False
+
     def __init__(self, arq) -> None:
         self.lexico = Scanner(arq)
+
+    def geratemp(self):
+        t = "t" + str(self.temp)
+        self.temp += 1
+        return t
+
+    def code(self, op, arg1, arg2, result):
+        codigoGerado = f"{op};{arg1};{arg2};{result}\n"
+        if not self.tlmode and not self.flmode:
+            self.codigo += codigoGerado
+        elif self.tlmode:
+            self.listaIfs[self.posListaIfs][0] += codigoGerado
+        elif self.flmode:
+            self.listaIfs[self.posListaIfs][1] += codigoGerado
+
+    def geraLista(self):
+        self.posListaIfs += 1
+        # self.listaIfs[self.posListaIfs].append(["1","2"])
+        self.listaIfs.append(["",""])
+
+    def deletaLista(self):
+        del self.listaIfs[self.posListaIfs]
+        self.posListaIfs -= 1
 
     def analisar(self):
         self.obtemSimbolo()
@@ -21,6 +58,7 @@ class Sintatico():
     def verificaSimbolo(self, termo):
         return self.simbolo != None and self.simbolo.termo == termo
 
+    # <programa> -> program ident <corpo> .
     def programa(self):
         if self.verificaSimbolo("program"):
             self.obtemSimbolo()
@@ -31,6 +69,7 @@ class Sintatico():
                 self.corpo()
 
                 if self.verificaSimbolo("."):
+                    self.code("PARA", "", "", "")
                     self.obtemSimbolo()
                 else:
                     raise RuntimeError(f"Erro sintático, esperado '.', encontrado: {self.simbolo.termo}")
@@ -39,6 +78,7 @@ class Sintatico():
         else:
             raise RuntimeError(f"Erro sintático, esperado 'program', encontrado: {self.simbolo.termo}")
         
+    # <corpo> -> <dc> begin <comandos> end
     def corpo(self):
         self.dc()
 
@@ -54,6 +94,7 @@ class Sintatico():
         else:
             raise RuntimeError(f"Erro sintático, esperado 'begin', encontrado: {self.simbolo.termo}")
 
+    # <dc> -> <dc_v> <mais_dc>  | λ
     def dc(self):
         if self.verificaSimbolo("real") or self.verificaSimbolo("integer"):
             self.dc_v()
@@ -63,6 +104,7 @@ class Sintatico():
             # Retorno vazio
             pass
         
+    # <mais_dc> -> ; <dc> | λ
     def mais_dc(self):
         if self.verificaSimbolo(";"):
             self.obtemSimbolo()
@@ -72,6 +114,7 @@ class Sintatico():
             # Retorno vazio
             pass
 
+    # <dc_v> ->  <tipo_var> : <variaveis>
     def dc_v(self):
         self.tipo_var()
 
@@ -82,23 +125,37 @@ class Sintatico():
         else:
             raise RuntimeError(f"Erro sintático, esperado ':', encontrado: {self.simbolo.termo}")
 
+    # <tipo_var> -> real | integer
     def tipo_var(self):
         if self.verificaSimbolo("real"):
+            self.tipo = TokenType.NUMERO_REAL
             self.obtemSimbolo()
         elif self.verificaSimbolo("integer"):
+            self.tipo = TokenType.NUMERO_INTEIRO
             self.obtemSimbolo()
         else:
             raise RuntimeError(f"Erro sintático, esperado 'real' ou 'integer', encontrado: {self.simbolo.termo}")
 
+    # <variaveis> -> ident <mais_var>
     def variaveis(self):
         # TODO: Mudar para nao passar palavras reservadas
         if self.simbolo.tipo == TokenType.IDENTIFICADOR:
+            if self.simbolo.termo in self.tabelaSimbolo:
+                raise RuntimeError(f"Erro semântico, variável {self.simbolo.termo} já declarada.")
+            else:
+                self.tabelaSimbolo[self.simbolo.termo] = Simbolo(self.tipo, self.simbolo.termo)
+                if self.tipo == TokenType.NUMERO_INTEIRO:
+                    self.code("ALME", "0", "", self.simbolo.termo)
+                else:
+                    self.code("ALME", "0.0", "", self.simbolo.termo)
+
             self.obtemSimbolo()
 
             self.mais_var()
         else:
             raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR.name}', encontrado: {self.simbolo.tipo.name}")
 
+    # <mais_var> -> , <variaveis> | λ
     def mais_var(self):
         if self.verificaSimbolo(","):
             self.obtemSimbolo()
@@ -108,10 +165,12 @@ class Sintatico():
             # Retorno vazio
             pass
 
+    # <comandos> -> <comando> <mais_comandos>
     def comandos(self):
         self.comando()
         self.mais_comandos()
 
+    # <mais_comandos> -> ; <comandos> | λ
     def mais_comandos(self):
         if self.verificaSimbolo(";"):
             self.obtemSimbolo()
@@ -121,6 +180,10 @@ class Sintatico():
             # Retorno vazio
             pass
 
+    # <comando> -> read (ident) |
+	#			   write (ident) |
+	#			   ident := <expressao> |
+	#			   if <condicao> then <comandos> <pfalsa> $
     def comando(self):
         if self.verificaSimbolo("read"):
             self.obtemSimbolo()
@@ -130,6 +193,7 @@ class Sintatico():
 
                 # TODO: Mudar para nao passar palavras reservadas
                 if self.simbolo.tipo == TokenType.IDENTIFICADOR:
+                    self.code("read", "", "", self.simbolo.termo)
                     self.obtemSimbolo()
 
                     if self.verificaSimbolo(")"):
@@ -150,6 +214,7 @@ class Sintatico():
 
                 # TODO: Mudar para nao passar palavras reservadas
                 if self.simbolo.tipo == TokenType.IDENTIFICADOR:
+                    self.code("write", self.simbolo.termo, "", "")
                     self.obtemSimbolo()
 
                     if self.verificaSimbolo(")"):
@@ -162,17 +227,37 @@ class Sintatico():
                 raise RuntimeError(f"Erro sintático, esperado '(', encontrado: {self.simbolo.termo}")
 
         elif self.verificaSimbolo("if"):
+            self.geraLista()
             self.obtemSimbolo()
 
-            self.condicao()
+            condicaoDir = self.condicao()
             
             if self.verificaSimbolo("then"):
                 self.obtemSimbolo()
 
+                self.tlmode = True
+                self.flmode = False
                 self.comandos()
+
+                self.tlmode = False
+                self.flmode = True
                 self.pfalsa()
                 
                 if self.verificaSimbolo("$"):
+                    self.tlmode = False
+                    self.flmode = False
+                    # gerar o codigo do if-else de verdade
+
+                    linhaJF = self.codigo.count('\n')
+                    quantInstThen = self.listaIfs[self.posListaIfs][0].count('\n')
+                    quantInstElse = self.listaIfs[self.posListaIfs][1].count('\n')
+
+                    self.code("JF", condicaoDir, linhaJF+quantInstThen+1, "")
+                    self.codigo += self.listaIfs[self.posListaIfs][0]
+                    self.code("goto", linhaJF+quantInstThen+quantInstElse+1, "", "")
+                    self.codigo += self.listaIfs[self.posListaIfs][1]
+
+                    self.deletaLista()
                     self.obtemSimbolo()
                 else:
                     raise RuntimeError(f"Erro sintático, esperado '$', encontrado: {self.simbolo.termo}")
@@ -180,107 +265,170 @@ class Sintatico():
                 raise RuntimeError(f"Erro sintático, esperado 'then', encontrado: {self.simbolo.termo}")
         # TODO: Mudar para nao passar palavras reservadas
         elif self.simbolo.tipo == TokenType.IDENTIFICADOR:
+            id = self.simbolo.termo
             self.obtemSimbolo()
             if self.verificaSimbolo(":="):
                 self.obtemSimbolo()
 
-                self.expressao()
+                expressaoDir = self.expressao()
+                self.code(":=", expressaoDir, "", id)
             else:
                 raise RuntimeError(f"Erro sintático, esperado ':=', encontrado: {self.simbolo.termo}")
         else:
             raise RuntimeError(f"Erro sintático, esperado 'read' ou 'write' ou 'if' ou '{TokenType.IDENTIFICADOR}', encontrado: {self.simbolo.termo} - tipo {self.simbolo.tipo.name}")
 
+    # <condicao> -> <expressao> <relacao> <expressao>
     def condicao(self):
-        self.expressao()
-        self.relacao()
-        self.expressao()
+        expressaoDir = self.expressao()
+        relacaoDir = self.relacao()
+        expressaoLinhaDir = self.expressao()
+        t = self.geratemp()
+        self.code(relacaoDir, expressaoDir, expressaoLinhaDir, t)
+        return t
 
+    # <relacao> -> = | <> | >= | <= | > | <
     def relacao(self):
         if self.verificaSimbolo("="):
             self.obtemSimbolo()
+            return "="
         elif self.verificaSimbolo("<>"):
             self.obtemSimbolo()
+            return "<>"
         elif self.verificaSimbolo(">="):
             self.obtemSimbolo()
+            return ">="
         elif self.verificaSimbolo("<="):
             self.obtemSimbolo()
+            return "<="
         elif self.verificaSimbolo(">"):
             self.obtemSimbolo()
+            return ">"
         elif self.verificaSimbolo("<"):
             self.obtemSimbolo()
+            return "<"
         else:
             raise RuntimeError(f"Erro sintático, esperado '=', '<>', '>=', '<=', '>' ou '<', encontrado: {self.simbolo.termo}")
 
+    # <expressao> -> <termo> <outros_termos>
     def expressao(self):
-        self.termo()
-        self.outros_termos()
+        outros_termosEsq = self.termo()
+        expressaoDir = self.outros_termos(outros_termosEsq)
+        return expressaoDir
 
+    # <termo> -> <op_un> <fator> <mais_fatores>
     def termo(self):
-        self.op_un()
-        self.fator()
-        self.mais_fatores()
+        op_unDir = self.op_un()
+        fatorDir = self.fator(op_unDir)
+        termoDir = self.mais_fatores(fatorDir)
+        return termoDir
 
+    # <op_un> -> - | λ
     def op_un(self):
         if self.verificaSimbolo("-"):
             self.obtemSimbolo()
+            return "-"
         else:
             # Retorno vazio
-            pass
+            return None
 
-    def fator(self):
+    # <fator> -> ident | numero_int | numero_real | (<expressao>)
+    def fator(self, fatorEsq):
         # TODO: Mudar para nao passar palavras reservadas
         if self.simbolo.tipo == TokenType.IDENTIFICADOR:
+            if fatorEsq == "-":
+                t = self.geratemp()
+                self.code("uminus", self.simbolo.termo, "", t)
+                fatorDir = t
+            else:
+                fatorDir = self.simbolo.termo
             self.obtemSimbolo()
+            return fatorDir
         elif self.simbolo.tipo == TokenType.NUMERO_INTEIRO:
+            if fatorEsq == "-":
+                t = self.geratemp()
+                self.code("uminus", self.simbolo.termo, "", t)
+                fatorDir = t
+            else:
+                fatorDir = self.simbolo.termo
             self.obtemSimbolo()
+            return fatorDir
         elif self.simbolo.tipo == TokenType.NUMERO_REAL:
+            if fatorEsq == "-":
+                t = self.geratemp()
+                self.code("uminus", self.simbolo.termo, "", t)
+                fatorDir = t
+            else:
+                fatorDir = self.simbolo.termo
             self.obtemSimbolo()
+            return fatorDir
         elif self.verificaSimbolo("("):
             self.obtemSimbolo()
 
-            self.expressao()
+            expressaoDir = self.expressao()
+            if fatorEsq == "-":
+                t = self.geratemp()
+                self.code("uminus", expressaoDir, "", t)
+                fatorDir = t
+            else:
+                fatorDir = expressaoDir
             
             if self.verificaSimbolo(")"):
                 self.obtemSimbolo()
+                return fatorDir
             else:
                 raise RuntimeError(f"Erro sintático, esperado ')', encontrado: {self.simbolo.termo}")
         else:
             raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR}', '{TokenType.NUMERO_INTEIRO}', '{TokenType.NUMERO_REAL}' ou '(', encontrado: {self.simbolo.termo} - tipo {self.simbolo.tipo.name}")
 
-    def outros_termos(self):
+    # <outros_termos> -> <op_ad> <termo> <outros_termos> | λ
+    def outros_termos(self, outros_termosEsq):
         if self.verificaSimbolo("+") or self.verificaSimbolo("-"):
-            self.op_ad()
-            self.termo()
-            self.outros_termos()
+            op_adDir = self.op_ad()
+            termoDir = self.termo()
+            t = self.geratemp()
+            self.code(op_adDir, outros_termosEsq, termoDir, t)
+            outros_termosDir = self.outros_termos(t)
+            return outros_termosDir
         else:
             # Retorno vazio
-            pass
+            return outros_termosEsq
 
+    # <op_ad> -> + | -
     def op_ad(self):
         if self.verificaSimbolo("+"):
             self.obtemSimbolo()
+            return "+"
         elif self.verificaSimbolo("-"):
             self.obtemSimbolo()
+            return "-"
         else:
             raise RuntimeError(f"Erro sintático, esperado '+' ou '-', encontrado: {self.simbolo.termo}")
 
-    def mais_fatores(self):
+    # <mais_fatores> -> <op_mul> <fator> <mais_fatores> | λ
+    def mais_fatores(self, mais_fatoresEsq):
         if self.verificaSimbolo("*") or self.verificaSimbolo("/"):
-            self.op_mul()
-            self.fator()
-            self.mais_fatores()
+            op_mulDir = self.op_mul()
+            fatorDir = self.fator(None)
+            t = self.geratemp()
+            self.code(op_mulDir, mais_fatoresEsq, fatorDir, t)
+            mais_fatoresDir = self.mais_fatores(t)
+            return mais_fatoresDir
         else:
             # Retorno vazio
-            pass
+            return mais_fatoresEsq
 
+    # <op_mul> -> * | /
     def op_mul(self):
         if self.verificaSimbolo("*"):
             self.obtemSimbolo()
+            return "*"
         elif self.verificaSimbolo("/"):
             self.obtemSimbolo()
+            return "/"
         else:
             raise RuntimeError(f"Erro sintático, esperado '*' ou '/', encontrado: {self.simbolo.termo}")
 
+    # <pfalsa> -> else <comandos> | λ
     def pfalsa(self):
         if self.verificaSimbolo("else"):
             self.obtemSimbolo()
