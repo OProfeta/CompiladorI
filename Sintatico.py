@@ -13,6 +13,19 @@ class Sintatico():
     codigo = "operador;arg1;arg2;result\n"
     temp = 1
 
+    palavrasReservadas = [
+        "program",
+        "begin",
+        "end",
+        "real",
+        "integer",
+        "read",
+        "write",
+        "if",
+        "then",
+        "else"
+    ]
+
     listaIfs = []
     posListaIfs = -1
     tlmode = False
@@ -37,7 +50,6 @@ class Sintatico():
 
     def geraLista(self):
         self.posListaIfs += 1
-        # self.listaIfs[self.posListaIfs].append(["1","2"])
         self.listaIfs.append(["",""])
 
     def deletaLista(self):
@@ -62,8 +74,8 @@ class Sintatico():
     def programa(self):
         if self.verificaSimbolo("program"):
             self.obtemSimbolo()
-            # TODO: Mudar para nao passar palavras reservadas
-            if self.simbolo.tipo == TokenType.IDENTIFICADOR:
+            
+            if self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
                 self.obtemSimbolo()
 
                 self.corpo()
@@ -74,7 +86,7 @@ class Sintatico():
                 else:
                     raise RuntimeError(f"Erro sintático, esperado '.', encontrado: {self.simbolo.termo}")
             else:
-                raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR.name}', encontrado: {self.simbolo.tipo.name}")
+                raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR.name}', encontrado: '{self.simbolo.termo}'")
         else:
             raise RuntimeError(f"Erro sintático, esperado 'program', encontrado: {self.simbolo.termo}")
         
@@ -138,8 +150,8 @@ class Sintatico():
 
     # <variaveis> -> ident <mais_var>
     def variaveis(self):
-        # TODO: Mudar para nao passar palavras reservadas
-        if self.simbolo.tipo == TokenType.IDENTIFICADOR:
+        
+        if self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
             if self.simbolo.termo in self.tabelaSimbolo:
                 raise RuntimeError(f"Erro semântico, variável {self.simbolo.termo} já declarada.")
             else:
@@ -153,7 +165,7 @@ class Sintatico():
 
             self.mais_var()
         else:
-            raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR.name}', encontrado: {self.simbolo.tipo.name}")
+            raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR.name}', encontrado: '{self.simbolo.termo}'")
 
     # <mais_var> -> , <variaveis> | λ
     def mais_var(self):
@@ -191,8 +203,8 @@ class Sintatico():
             if self.verificaSimbolo("("):
                 self.obtemSimbolo()
 
-                # TODO: Mudar para nao passar palavras reservadas
-                if self.simbolo.tipo == TokenType.IDENTIFICADOR:
+                
+                if self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
                     self.code("read", "", "", self.simbolo.termo)
                     self.obtemSimbolo()
 
@@ -202,7 +214,7 @@ class Sintatico():
                     else:
                         raise RuntimeError(f"Erro sintático, esperado ')', encontrado: {self.simbolo.termo}")
                 else:
-                    raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR.name}', encontrado: {self.simbolo.tipo.name}")
+                    raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR.name}', encontrado: '{self.simbolo.termo}'")
             else:
                 raise RuntimeError(f"Erro sintático, esperado '(', encontrado: {self.simbolo.termo}")
 
@@ -212,8 +224,8 @@ class Sintatico():
             if self.verificaSimbolo("("):
                 self.obtemSimbolo()
 
-                # TODO: Mudar para nao passar palavras reservadas
-                if self.simbolo.tipo == TokenType.IDENTIFICADOR:
+                
+                if self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
                     self.code("write", self.simbolo.termo, "", "")
                     self.obtemSimbolo()
 
@@ -222,7 +234,7 @@ class Sintatico():
                     else:
                         raise RuntimeError(f"Erro sintático, esperado ')', encontrado: {self.simbolo.termo}")
                 else:
-                    raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR.name}', encontrado: {self.simbolo.tipo.name}")
+                    raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR.name}', encontrado: '{self.simbolo.termo}'")
             else:
                 raise RuntimeError(f"Erro sintático, esperado '(', encontrado: {self.simbolo.termo}")
 
@@ -263,8 +275,8 @@ class Sintatico():
                     raise RuntimeError(f"Erro sintático, esperado '$', encontrado: {self.simbolo.termo}")
             else:
                 raise RuntimeError(f"Erro sintático, esperado 'then', encontrado: {self.simbolo.termo}")
-        # TODO: Mudar para nao passar palavras reservadas
-        elif self.simbolo.tipo == TokenType.IDENTIFICADOR:
+        
+        elif self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
             id = self.simbolo.termo
             self.obtemSimbolo()
             if self.verificaSimbolo(":="):
@@ -275,7 +287,7 @@ class Sintatico():
             else:
                 raise RuntimeError(f"Erro sintático, esperado ':=', encontrado: {self.simbolo.termo}")
         else:
-            raise RuntimeError(f"Erro sintático, esperado 'read' ou 'write' ou 'if' ou '{TokenType.IDENTIFICADOR}', encontrado: {self.simbolo.termo} - tipo {self.simbolo.tipo.name}")
+            raise RuntimeError(f"Erro sintático, esperado 'read' ou 'write' ou 'if' ou '{TokenType.IDENTIFICADOR}', encontrado: '{self.simbolo.termo}' - tipo {self.simbolo.tipo.name}")
 
     # <condicao> -> <expressao> <relacao> <expressao>
     def condicao(self):
@@ -333,8 +345,8 @@ class Sintatico():
 
     # <fator> -> ident | numero_int | numero_real | (<expressao>)
     def fator(self, fatorEsq):
-        # TODO: Mudar para nao passar palavras reservadas
-        if self.simbolo.tipo == TokenType.IDENTIFICADOR:
+        
+        if self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
             if fatorEsq == "-":
                 t = self.geratemp()
                 self.code("uminus", self.simbolo.termo, "", t)
@@ -378,7 +390,7 @@ class Sintatico():
             else:
                 raise RuntimeError(f"Erro sintático, esperado ')', encontrado: {self.simbolo.termo}")
         else:
-            raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR}', '{TokenType.NUMERO_INTEIRO}', '{TokenType.NUMERO_REAL}' ou '(', encontrado: {self.simbolo.termo} - tipo {self.simbolo.tipo.name}")
+            raise RuntimeError(f"Erro sintático, esperado '{TokenType.IDENTIFICADOR}', '{TokenType.NUMERO_INTEIRO}', '{TokenType.NUMERO_REAL}' ou '(', encontrado: '{self.simbolo.termo}' - tipo {self.simbolo.tipo.name}")
 
     # <outros_termos> -> <op_ad> <termo> <outros_termos> | λ
     def outros_termos(self, outros_termosEsq):

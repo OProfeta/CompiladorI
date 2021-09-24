@@ -1,8 +1,9 @@
 from Sintatico import Sintatico
-from Scanner import Scanner
+import sys
 
-def main():
-    sintatico = Sintatico("correto.lalg.txt")
+def main(arquivo):
+
+    sintatico = Sintatico(arquivo)
     sintatico.analisar()
 
     print("Tabela de simbolos:")
@@ -11,4 +12,8 @@ def main():
     print(sintatico.codigo)
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 2:
+        print("Por favor passe o arquivo de entrada.")
+    elif len(sys.argv) > 2:
+        print("Por favor passe somente o arquivo de entrada.")
+    main(sys.argv[1])

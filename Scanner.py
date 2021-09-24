@@ -19,7 +19,6 @@ class Scanner():
             c = self.nextChar()
             if c == 0:
                 return None
-            # print(f"pos: {self.pos} estado {estado}, c = {c}")
             if estado == 0:
                 if self.isEspaco(c):
                     estado = 0
