@@ -217,6 +217,8 @@ class Sintatico():
 
                 
                 if self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
+                    if not self.simbolo.termo in self.tabelaSimbolo:
+                        raise RuntimeError(f"Erro semântico: variável '{self.simbolo.termo}' não foi declarada.")
                     codigoGerado += self.code("read", "", "", self.simbolo.termo)
                     self.obtemSimbolo()
 
@@ -238,6 +240,8 @@ class Sintatico():
 
                 
                 if self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
+                    if not self.simbolo.termo in self.tabelaSimbolo:
+                        raise RuntimeError(f"Erro semântico: variável '{self.simbolo.termo}' não foi declarada.")
                     codigoGerado += self.code("write", self.simbolo.termo, "", "")
                     self.obtemSimbolo()
 
@@ -290,6 +294,8 @@ class Sintatico():
                 raise RuntimeError(f"Erro sintático, esperado 'then', encontrado: {self.simbolo.termo}")
         
         elif self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
+            if not self.simbolo.termo in self.tabelaSimbolo:
+                raise RuntimeError(f"Erro semântico: variável '{self.simbolo.termo}' não foi declarada.")
             id = self.simbolo.termo
             self.obtemSimbolo()
             if self.verificaSimbolo(":="):
@@ -364,6 +370,8 @@ class Sintatico():
     def fator(self, fatorEsq):
         
         if self.simbolo.tipo == TokenType.IDENTIFICADOR and (not self.simbolo.termo in self.palavrasReservadas):
+            if not self.simbolo.termo in self.tabelaSimbolo:
+                raise RuntimeError(f"Erro semântico: variável '{self.simbolo.termo}' não foi declarada.")
             if fatorEsq == "-":
                 t = self.geratemp()
                 codigoGerado = self.code("uminus", self.simbolo.termo, "", t)
