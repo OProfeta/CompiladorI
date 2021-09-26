@@ -405,15 +405,14 @@ class Sintatico():
             self.obtemSimbolo()
 
             expressaoCodigo, expressaoDir = self.expressao()
+            codigoGerado = expressaoCodigo
 
             if fatorEsq == "-":
                 t = self.geratemp()
-                codigoGerado = expressaoCodigo
                 codigoGerado += self.code("uminus", expressaoDir, "", t)
                 fatorDir = t
             else:
                 fatorDir = expressaoDir
-                codigoGerado = ""
             if self.verificaSimbolo(")"):
                 self.obtemSimbolo()
                 return codigoGerado, fatorDir

@@ -6,9 +6,9 @@ def main(arquivo):
     sintatico = Sintatico(arquivo)
     sintatico.analisar()
 
-    print("Tabela de simbolos:")
-    print(sintatico.tabelaSimbolo)
-    print("Codigo intermediario:")
+    # print("Tabela de simbolos:")
+    # print(sintatico.tabelaSimbolo)
+    # print("Codigo intermediario:")
     for linha in sintatico.codigoArrumado:
         print(linha)
 
