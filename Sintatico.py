@@ -45,7 +45,7 @@ class Sintatico():
         self.obtemSimbolo()
         codigoPrograma = self.programa()
         if self.simbolo == None:
-            print("Cadeia analisada com sucesso!")
+            # print("Cadeia analisada com sucesso!")
             self.codigo = codigoPrograma
             self.codigoArrumado = []
             
