@@ -9,11 +9,13 @@ def main(arquivo):
     print("Tabela de simbolos:")
     print(sintatico.tabelaSimbolo)
     print("Codigo intermediario:")
-    print(sintatico.codigo)
+    for linha in sintatico.codigoArrumado:
+        print(linha)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Por favor passe o arquivo de entrada.")
     elif len(sys.argv) > 2:
         print("Por favor passe somente o arquivo de entrada.")
-    main(sys.argv[1])
+    else:
+        main(sys.argv[1])
