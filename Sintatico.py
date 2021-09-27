@@ -57,7 +57,7 @@ class Sintatico():
                     continue
                 pontovirgulaIndex = linha.find(";", underlineIndex)
                 tamanho = int(linha[underlineIndex+1:pontovirgulaIndex])
-                novaLinha = linha[:underlineIndex] + str(tamanho+nLinha) + linha[pontovirgulaIndex+len(str(tamanho+nLinha)):]
+                novaLinha = linha[:underlineIndex] + str(tamanho+nLinha) + linha[pontovirgulaIndex+len(str(tamanho))-1:]
                 self.codigoArrumado.append(novaLinha)
         else:
             raise RuntimeError(f"Erro sintático, esperado fim de cadeia, encontrado: {self.simbolo.termo}")
